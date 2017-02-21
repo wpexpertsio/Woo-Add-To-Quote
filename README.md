@@ -53,3 +53,14 @@ From back end go to woocommerce setting page, there is a tab named "Quote" you c
 **Can we add html/text to quote email template?**
 
 Yes. From back end go to woocommerce setting page, there is a tab named "Quote" you can find this option here.
+
+
+## Changelog
+
+**1.1**
+
+- Added functionality to move products from cart to quote
+
+**1.0**
+
+- Initial release
