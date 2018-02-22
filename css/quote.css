@@ -98,12 +98,16 @@ dl._quote_variations dd p {
     clear: both;
 }
 ._quoteall_buttons_wrapper {
-    clear:both;
-    width: 50%;
-    float: right;
+    clear: both;
+    width: 98%;
+
 }
 ._quoteall_buttons_wrapper.small_width {
     width: 100%;
+}
+._quoteall_buttons_wrapper button#_email_quote_trigger {
+    float: right;
+    margin-right: 10px;
 }
 .woocommerce-account #waqt_user_quote_detail .product_image {
     text-align: center;
@@ -273,6 +277,18 @@ dl._quote_variations dd p {
 }
 
 @media (max-width:768px) {
+    #_add_quote_to_cart .button,
+    #clear_quotes .button,
+    #_email_quote_trigger {
+      width: 100% !important;
+    }
+    ._quoteall_buttons_wrapper button#_email_quote_trigger {
+        padding: 9px 28px;
+        margin-right: 0px;
+    }
+    #clear_quotes ._submit {
+         margin-right: 0px;
+    }
 	.quote table tfoot td:first-child,
 	.quote table thead th.product-price,
 	.quote table tbody td.product-price {

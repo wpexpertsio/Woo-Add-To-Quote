@@ -1,5 +1,24 @@
 jQuery(document).ready(
     function($) {
+
+        $(window).on('load', function() {
+            var input_value = $("input[name=quantity]").val();
+            $("input[name=product_quantity]").val(input_value);
+          //  alert(input_value);
+        });
+        $('input[name=quantity]').change(function() {
+            var input_value = $("input[name=quantity]").val();
+        	//alert(input_value);
+           $('input[name=product_quantity]').val(input_value);
+        });
+
+        $('.product-remove').click(function(){
+        	jQuery('.shop_table.cart').css('opacity',0.5);
+            setTimeout(function() {
+                window.location.reload();
+            }, 3000);
+        });
+
         $(document).on('change','.variations select,.variations-table select,.variation_form_section #color,.variation_form_section #pa_colors', function() {
             setTimeout(function() { _display_hide() } ,500);
             function _display_hide() {
@@ -76,3 +95,25 @@ jQuery(document).ready(
 		}
     }
 );
+
+function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires="+d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+}
+
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+        }
+    }
+    return "";
+}

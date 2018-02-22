@@ -4,19 +4,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once('quote_on_cart.php');
-add_action('wp_head', 'watq_quote_js');
+//add_action( 'wp_enqueue_scripts', 'watq_quote_js' );
+
+add_action( 'wp_head', 'watq_quote_js' );
+//add_action('wp_head', 'watq_quote_js');
 function watq_quote_js() {
+    global $product;
     ?>
     <script>
         jQuery(document).ready(
             function($) {
+
                 $('._add_to_quote_submit').click(
+
                     function(e) {
                         e.preventDefault();
                         <?php
                         if( function_exists('get_product') ) {
-                            $product_ = wc_get_product(get_the_ID());
-                            if($product_->is_type('variable')){
+
+                        $product_ = wc_get_product(get_the_ID());
+
+                       // if($product_->is_type( 'variable' )){
+
+                        if((isset($_POST['product_type']) && $_POST['product_type'] == "variation")){
                         ?>
                         var $variation = {};
                         var $count = 0;
@@ -36,6 +46,7 @@ function watq_quote_js() {
                         ?>
                         var $product_quantity = $('.single-product').find('form.cart').find('.quantity').find('input[type="number"]').val();
                         var $product_variation_id = $('.single-product').find('form.variations_form').find('input.variation_id').val();
+
                         $('.single-product').find('._add_to_quote').find('input.quantity').val($product_quantity).change();
                         $('.single-product').find('._add_to_quote').find('input.variation_id').val($product_variation_id).change();
                         var $elem = document.getElementById('_add_to_quote_form_wrapper');
@@ -58,16 +69,18 @@ function watq_quote_js() {
 
                         $.post(ajaxurl, data, function(response) {
                             var responseArray = $.parseJSON(response);
-                            location.reload();
+                            //location.reload();
                         });
                     }
                 );
                 <?php
                 if(get_option('wc_settings_quote_on_cart_select') === "true") {
+
+                $cart_products = watq_from_cart_to_quote();
                 ?>
                 var $quote_on_cart_form = '<form method="post" action="' + window.location.href + '">';
                 <?php
-                    $cart_products = watq_from_cart_to_quote();
+
                     $loo_counter = 0;
                     if(is_array($cart_products) && !empty($cart_products)) {
                         foreach($cart_products as $pro) {
@@ -156,10 +169,10 @@ function watq_from_cart_to_quote() {
 
             $product_from_cart[$loop_value]['product_id'] = $item_value['product_id'];
             $product_from_cart[$loop_value]['product_image'] = wp_get_attachment_url( get_post_thumbnail_id($item_value['product_id']) );
-            $product_from_cart[$loop_value]['product_title'] = $item_value['data']->post->post_title;
+            $product_from_cart[$loop_value]['product_title'] = get_the_title($item_value['product_id']);
             $product_from_cart[$loop_value]['product_quantity'] = $item_value['quantity'];
-            $product_from_cart[$loop_value]['product_type'] = $item_value['data']->product_type;
-            if($item_value['data']->product_type == "variation" || $item_value['data']->product_type == "variable" ){
+            $product_from_cart[$loop_value]['product_type'] = $item_value['data']->get_type();
+            if( $item_value['data']->get_type() == "variable" ){
                 $product_from_cart[$loop_value]['product_variation_id'] = $item_value['variation_id'];
                 $product_from_cart[$loop_value]['product_variations'] = array_key_exists('variation', $item_value) ? $item_value['variation'] : '';
             }
@@ -170,4 +183,30 @@ function watq_from_cart_to_quote() {
         }
     }
     return $product_from_cart;
+}
+
+add_action('wp_footer','test_woo');
+
+function test_woo() {
+    global $woocommerce;
+    $loop_value = 0;
+    $product_from_cart = array();
+    if(is_object($woocommerce) || is_array($woocommerce)) {
+        foreach($woocommerce->cart->get_cart() as $item_key=> $item_value) {
+
+            $product_from_cart[$loop_value]['product_id'] = $item_value['product_id'];
+            $product_from_cart[$loop_value]['product_image'] = wp_get_attachment_url( get_post_thumbnail_id($item_value['product_id']) );
+            $product_from_cart[$loop_value]['product_title'] = get_the_title($item_value['product_id']);
+            $product_from_cart[$loop_value]['product_quantity'] = $item_value['quantity'];
+            $product_from_cart[$loop_value]['product_type'] = $item_value['data']->get_type();
+            if( $item_value['data']->get_type() == "variable" ){
+                $product_from_cart[$loop_value]['product_variation_id'] = $item_value['variation_id'];
+                $product_from_cart[$loop_value]['product_variations'] = array_key_exists('variation', $item_value) ? $item_value['variation'] : '';
+            }
+            else {
+                $product_from_cart[$loop_value]['product_variation_id'] = $item_value['product_id'];
+            }
+            $loop_value++;
+        }
+    }
 }

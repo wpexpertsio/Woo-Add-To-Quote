@@ -8,8 +8,10 @@ add_action('init', 'watq__require_files');
 function watq__require_files() {
     require_once('admin/class_watq_meta_boxes.php');
     require_once('admin/admin_functions.php');
-    require_once('js.php');
+    //require_once('js.php');
+    include 'js.php';
     require_once('shortcodes.php');
+
 }
 
 add_action('init', '_watq_unread_quotes');
@@ -29,7 +31,19 @@ function waqt_add_settings_page( $settings ) {
 add_action('wp_enqueue_scripts','quote_scripts');
 function quote_scripts() {
     add_thickbox();
-    wp_enqueue_script('quote-script', plugins_url( '/js/quote.js', __FILE__ ), array('jquery'), true);
+//    wp_enqueue_script('quote-script', plugins_url( '/js/quote.js', __FILE__ ), array('jquery'), true);
+    wp_register_script( 'quote-script-js', plugins_url( '/js/quote.js', __FILE__ ), array('jquery'), true );
+
+    // Localize the script with new data
+    $translation_array = array(
+        'plugin_url' => WATQ_PLUGIN_URL,
+    );
+    wp_localize_script( 'quote-script-js', 'plugin_object', $translation_array );
+
+// Enqueued script with localized data.
+    wp_enqueue_script( 'quote-script-js' );
+
+   // wp_enqueue_script('quote-script', plugins_url( '/js/quote_custom.js', __FILE__ ), array('jquery'), true);
     wp_enqueue_style('quote-style', plugins_url( '/css/quote.css', __FILE__ ));
 }
 
@@ -38,6 +52,7 @@ function watq_admin_scripts() {
     wp_enqueue_style('quote-style', plugins_url( '/css/watq_admin.css', __FILE__ ));
 }
 
+
 add_action( 'woocommerce_after_add_to_cart_form', 'watq_add_quote_button' );
 function watq_add_quote_button() {
     $class = '';
@@ -45,7 +60,8 @@ function watq_add_quote_button() {
     $product_ = '';
     if( function_exists('get_product') ) {
         $product_ = wc_get_product(get_the_ID());
-        $product_type = ($product_->product_type == "variable") ? "variation" : $product_->product_type;
+       // print_r('test324'.$product_);
+        $product_type = ($product_->get_type()) ? "variation" : $product_->get_type();
 
         if($product_->is_type('variable')){
             $class = "_hide";
@@ -78,10 +94,16 @@ function watq_quote_submission_() {
                 $product_image = sanitize_text_field($_POST['product_image']);
                 $product_title = sanitize_text_field($_POST['product_title']);
                 $product_quantity = intval($_POST['product_quantity']);
+                //$product_quantity =2;
                 $product_type = sanitize_text_field($_POST['product_type']);
                 if(array_key_exists('variations_attr', $_POST)) {
-                    $variation_data = json_decode(stripslashes($_POST['variations_attr']), true);
+                    //print_r( $product_type);
+                    $product_variations = new WC_Product_Variable( $product_id );
+                    $variation_attr_array = $product_variations->get_available_variations();
+
+                   $variation_data = json_decode(stripslashes($_POST['variations_attr']), true);
                     $variation_attr_array = watq_get_product_variations($variation_data);
+                    print_r($variation_attr_array);
                     $product_variation_attr = $variation_attr_array;
                 }
                 else {
@@ -101,6 +123,7 @@ function watq_quote_submission_() {
                     "variations_attr" => $product_variation_attr,
                     "product_variation_id" => ((isset($product_variation_id) && !empty($product_variation_id)) ?  $product_variation_id : $product_id),
                 );
+
 
                 $updated_checked = watq_quote_exists_($set_array["product_variation_id"], $set_array["product_quantity"]);
 
@@ -257,6 +280,7 @@ function watq_convert_to_cart() {
         if(isset($_POST['action'])) {
             if(!empty($_POST['action']) && $_POST['action'] == "add_to_cart_q") {
                 $submit_data = array_map('watq_validate_array', $_POST['data']);
+
                 $items_for_cart = array();
                 foreach($submit_data as $sub_data) {
                     $items_for_cart[] = $sub_data;
@@ -270,10 +294,11 @@ function watq_convert_to_cart() {
                         $variations_available_ = $variation_data;
 
                         $variation_arr = array();
-                        foreach($variations_available_ as $key_variation_=>$val_variation_) {
-                            $variation_arr[$key_variation_] = $val_variation_;
+                        if (is_array($variations_available_) || is_object($variations_available_)) {
+                            foreach ($variations_available_ as $key_variation_ => $val_variation_) {
+                                $variation_arr[$key_variation_] = $val_variation_;
+                            }
                         }
-
                         $cart_result = watq_product_exists_in_cart($item);
                         if(!$cart_result) {
                             $woocommerce->cart->add_to_cart($item['product_id'], $item['product_quantity'],$item['variation_id'], $variation_arr);
@@ -302,9 +327,11 @@ function watq_validate_array($val) {
     foreach($val as $key=>$key_val){
         if($key == "product_id" || $key == "product_quantity" || $key == "variation_id" ) {
             $val[$key] = intval($key_val);
+
         }
         else {
             $val[$key] = sanitize_text_field($key_val);
+
         }
     }
     return $val;
@@ -457,6 +484,10 @@ function watq__send_email() {
         if(array_key_exists('action', $_POST) && !empty($_POST['action']) && $_POST['action'] == "send_quote") {
 
             $submit_data = array_map('watq_validate_array', $_POST['data']);
+            /*echo '<pre>';
+          print_r($submit_data);
+          echo '</pre>';
+          die();*/
             $validate_email = explode(',', $_POST['_to_send_email']);
             $sanitize_email = array();
             $validation_result = true;
@@ -508,22 +539,29 @@ function watq__send_email() {
                 $message .= '</thead>';
                 $message .= '<tbody>';
                 $quote_post = array();
+                $gett = null;
                 foreach ($submit_data as $sub_data) {
-                    $quote_post[$sub_data['variation_id']] = array('product_id' => $sub_data['product_id'], 'product_image' => $sub_data['product_image'], 'product_title' => $sub_data['product_title'], 'product_price' => $sub_data['product_price'], 'product_quantity' => $sub_data['product_quantity'], 'product_type' => $sub_data['product_type'], 'variation_id' => $sub_data['variation_id'], 'sub_total' => $sub_data['sub_total'], 'quote_total' => $_POST['quote_total']);
+
+
+                    $quote_post[] = array('product_id' => $sub_data['product_id'], 'product_image' => $sub_data['product_image'], 'product_title' => $sub_data['product_title'], 'product_price' => $sub_data['product_price'], 'product_quantity' => $sub_data['product_quantity'], 'product_type' => $sub_data['product_type'], 'variation_id' => $sub_data['variation_id'], 'sub_total' => $sub_data['sub_total'], 'quote_total' => $_POST['quote_total']);
                     $message .= '<tr style="border-bottom: 1px solid #e5e5e5;">';
                     $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-right:1px solid #e5e5e5;">';
                     $message .= '<a href="' . $sub_data['product_image'] . '" ><img src="' . $sub_data['product_image'] . '" width="100" /></a>';
                     $message .= '</td>';
                     $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-right:1px solid #e5e5e5;">';
                     $message .= $sub_data['product_title'];
-                    if ($sub_data['product_type'] == 'variation') {
-                        if (isset($sub_data['product_variation'])) {
-                            $product_variation = json_decode(stripslashes($sub_data['product_variation']), true);
-                            $pro_var = watq_get_product_variations($product_variation, true);
-                            $message .= $pro_var;
-                            $quote_post[$sub_data['variation_id']]['product_variation'] = $pro_var;
+                           $product = wc_get_product ( $sub_data['product_id'] );
+
+                    if ( $product->is_type( 'variable' ) ){
+
+                        $variation = wc_get_product($sub_data['variation_id']);
+                        $varation_name = $variation->get_variation_attributes();
+                        foreach ($varation_name as $key => $value) {
+                          '<br><b>' . str_replace('attribute_pa_', '', $key) . ':</b> ' . $value . '<br>';
+
                         }
                     }
+
                     $message .= '</td>';
                     $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-right:1px solid #e5e5e5;">';
                     $message .= wc_price($sub_data['product_price']);
@@ -535,6 +573,14 @@ function watq__send_email() {
                     $message .= $sub_data['sub_total'];
                     $message .= '</td>';
                     $message .= '</tr>';
+                    $product_id = $sub_data['product_id'];
+                    $product = wc_get_product($product_id);
+                    $quantity = (int)$sub_data['product_quantity'];
+
+                    $sale_price = $product->get_price();
+                    $gett += $sale_price*$quantity;
+
+
                 }
                 $message .= '</tbody>';
                 $message .= '<tfoot>';
@@ -543,7 +589,7 @@ function watq__send_email() {
                 $message .= '<td></td>';
                 $message .= '<td></td>';
                 $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-left:1px solid #e5e5e5;">' . __('Sub Total', WATQ) . '</td>';
-                $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-left:1px solid #e5e5e5;">' . wc_price($_POST['quote_total']) . '</td>';
+                $message .= '<td style="width: 16.66%;padding:10px;text-align: center;border-left:1px solid #e5e5e5;">'. wc_price($gett). '</td>';
                 $message .= '</tr>';
                 $message .= '</tfoot>';
                 $message .= '</table>';
@@ -566,13 +612,17 @@ function watq__send_email() {
                     $current_user_id = get_current_user_id();
                 }
                 $quotes_send_to = $to_send;
-                watq_save_quote_post_meta($quote_post, $current_user_id, $quotes_send_to);
+              $srit_Zdfa =   watq_save_quote_post_meta($quote_post, $current_user_id, $quotes_send_to);
 
-                add_filter('wp_mail_content_type', create_function('', 'return "text/html"; '));
+
                 $site_title = get_bloginfo('name');
-                $headers = 'From: ' . $site_title . ' <admin@' . $site_title . '.com>' . "\r\n";
+
+                $admin_email = get_option('admin_email');
+                $headers = array('Content-Type: text/html; charset=UTF-8','From: '.$site_title.' <'.$admin_email.'>' );
+
                 $quote_email_title = get_option('wc_settings_quote_email_subject');
                 $email_title = (!empty($quote_email_title) ? $quote_email_title : __('Quote', WATQ));
+
 
                 if (wp_mail($to_send, $email_title, $message, $headers, $attachments)) {
 
@@ -597,7 +647,6 @@ function watq__send_email() {
                     echo '<META HTTP-EQUIV="refresh" content="0;URL=' . get_permalink(get_the_ID()) . '">';
                     exit();
                 } else {
-
                     $error_message = null;
                     $quote_error_email = get_option('wc_settings_quote_error_email');
                     if ($quote_error_email != '') {
@@ -654,18 +703,22 @@ function watq_get_product_variations($variation_array, $html=false) {
     $result = null;
     if($html) {
         $result = '<dl class="variation _quote_variations">';
-        foreach($available_variations as $av_key=>$av_value){
-            $to_replace = array('attribute_pa_',':');
-            $with_replace = array('','');
-            $result .= '<dt class="variation-'.str_replace('attribute_pa_','',$av_key).'">'.ucfirst(str_replace($to_replace,$with_replace,$av_key)).' </dt>';
-            $result .= '<dd class="variation-'.str_replace('attribute_pa_','',$av_key).'"> <p>'.$av_value.'</p></dd>';
+        if (is_array($available_variations) || is_object($available_variations)) {
+            foreach ( $available_variations as $av_key=>$av_value){
+                $to_replace = array('attribute_pa_', ':');
+                $with_replace = array('', '');
+                $result .= '<dt class="variation-' . str_replace('attribute_pa_', '', $av_key) . '">' . ucfirst(str_replace($to_replace, $with_replace, $av_key)) . ' </dt>';
+                $result .= '<dd class="variation-' . str_replace('attribute_pa_', '', $av_key) . '"> <p>' . $av_value . '</p></dd>';
+            }
         }
         $result .= '</dl>';
     }
     else {
         $result = array();
-        foreach($available_variations as $av_key=>$av_value){
-            $result[$av_value[0]] = $av_value[1];
+        if (is_array($available_variations) || is_object($available_variations)) {
+            foreach ($available_variations as $av_key => $av_value) {
+                $result[$av_value[0]] = $av_value[1];
+            }
         }
     }
      return $result;
@@ -796,14 +849,19 @@ function watq_save_quote_post_meta($quote_data, $user_id, $to_send) {
 
     $quote_post = array();
     $quote_post['sent_to'] = str_replace(',', ',<br /> ', $to_send);
+
     $quote_post['user_id'] = $user_id;
     $quote_post['quote_data'] = $quote_data;
     $post_id = create_post_to_adds('Quote #'.$quote_number);
+
     $quote_post['quote_general_data'] = array('time' => get_the_time('',$post_id), 'date' => date('d-M-Y'));
     if(!empty($user_id)) {
-        $saved_wishlist = get_user_meta( $user_id, 'watq_quote_whishlist', true);
+        $saved_wishlist = (array) get_user_meta( $user_id, 'watq_quote_whishlist', true);
+
         $saved_wishlist_info = array('quote_general_data' => array('time' => get_the_time('',$post_id), 'date' => date('d-M-Y'), 'sent_to' => str_replace(',', ', ', $to_send)), 'quote_data' => $quote_data);
-        $saved_wishlist['Quote #'.$quote_number] = $saved_wishlist_info;
+        $array_index = 'Quote #'.$quote_number;
+
+        $saved_wishlist[$array_index] = $saved_wishlist_info;
         update_user_meta($user_id, 'watq_quote_whishlist', $saved_wishlist);
     }
 

@@ -24,7 +24,7 @@ function watq_get_quote($atts) {
                         <thead>
                             <tr>
                                 <th class="product-remove"><?php echo __('remove', WATQ); ?></th>
-                                <th class="product-thumbnail"><?php echo __('product Image', WATQ); ?></th>
+                                <th class="product-thumbnail"><?php echo __('Image', WATQ); ?></th>
                                 <th class="product-name"><?php echo __('product', WATQ); ?></th>
                                 <th class="product-price"><?php echo __('price', WATQ); ?></th>
                                 <th class="product-quantity"><?php echo __('Quantity', WATQ); ?></th>
@@ -35,6 +35,8 @@ function watq_get_quote($atts) {
                             <?php
                             $cookie_data = json_decode(stripslashes($quote_elem), true);
                             if(is_array($cookie_data)) {
+                                global $woocommerce;
+                                $gett = null;
                                 $whole_quote_sub_total = null;
                                 foreach($cookie_data as $data) {
                                     $product_obj = '';
@@ -43,6 +45,7 @@ function watq_get_quote($atts) {
                                     }
                                     elseif($data['product_type'] == "variation") {
                                         $product_obj = new WC_Product_Variation($data['product_variation_id'] );
+                                       // print_r($product_obj);
                                     }
                                     $price_currency = watq_get_product_price($data['product_variation_id'], $data['product_type']);
                                     $id = 'product_id';
@@ -61,29 +64,52 @@ function watq_get_quote($atts) {
                                         <td class="product-image"><a href="<?php echo get_permalink($data['product_id']); ?>" ><img src="<?php echo $data['product_image']; ?>" /></a></td>
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $image; ?>]" class="" value="<?php echo $data['product_image']; ?>" />
                                         <td class="product-title">
-                                            <a href="<?php echo get_permalink($data['product_id']); ?>" ><?php echo $data['product_title']; ?></a>
+                                        <?php
+
+
+ ?>
+                                            <a href="<?php echo get_permalink($data['product_id']); ?>" ><?php echo $data['product_title']; ?></a><br>
                                             <?php
-                                            if($data['product_type'] == "variation"){
-                                                if(isset($data['variations_attr'])) {
-                                                    echo watq_get_product_variations($data['variations_attr'], true);
-                                                ?>
-                                                <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $product_variation; ?>]" class="" value="<?php echo esc_html(json_encode($data['variations_attr'])); ?>" />
-                                                <?php
-                                                }
+
+                                              $product = wc_get_product ( $data['product_id'] );
+                                          //  print_r($product);
+                                        if ( $product->is_type( 'variable' ) ){
+
+                                            $variation = wc_get_product($data['product_variation_id']);
+                                         $varation_name = $variation->get_variation_attributes();
+
+                                           foreach ($varation_name as $key => $value) {
+                                               echo '<b>' . str_replace('attribute_pa_', '', $key) . ':</b> ' . $value . '<br>';
+
                                             }
+                                              }
+
                                             ?>
                                         </td>
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $title; ?>]" class="" value="<?php echo $data['product_title']; ?>" />
                                         <td class="product-price"><?php echo WC()->cart->get_product_price( $product_obj ); ?></td>
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $price; ?>]" class="" value="<?php echo esc_html($price_currency['price']); ?>" />
-                                        <td class="product-quantity"><?php echo $data['product_quantity']; ?></td>
-                                        <td class="product-total"><?php echo WC()->cart->get_product_subtotal( $product_obj, $data['product_quantity']); ?></td>
+                                        <td class="product-quantity">
+                                        <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][product_quantity]" class="" value="<?php echo $data['product_quantity'] ?>" />
+                                        <?php echo $data['product_quantity']; ?></td>
+                                        <td class="product-total test"><?php echo WC()->cart->get_product_subtotal( $product_obj, $data['product_quantity']); ?></td>
                                         <?php
                                         $product_sub_total = WC()->cart->get_product_subtotal( $product_obj, $data['product_quantity']);
                                         $currency = get_woocommerce_currency_symbol();
                                         $price_with_currency = strrchr($product_sub_total,$currency);
+
                                         $price_num = str_replace($currency, '', $price_with_currency);
-                                        $whole_quote_sub_total += floatval($price_num);
+
+                                      $product_id = $data['product_id'];
+                                       $product = wc_get_product($product_id);
+                                      $quantity = (int)$data['product_quantity'];
+
+                                       $sale_price = $product->get_price();
+                                       $gett += $sale_price*$quantity;
+
+
+                                       //  $amount2 = floatval( preg_replace( '#[^\d.]#', '', $woocommerce->cart->get_cart_total() ) );
+
                                         ?>
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $total_price; ?>]" class="" value="<?php echo esc_html(WC()->cart->get_product_subtotal( $product_obj, $data['product_quantity'])); ?>" />
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $quantity; ?>]" class="" value="<?php echo $data['product_quantity']; ?>" />
@@ -101,7 +127,7 @@ function watq_get_quote($atts) {
                                     <td></td>
                                     <td></td>
                                     <td colspan="2"><?php echo __('Sub Total', WATQ); ?></td>
-                                    <td><?php echo wc_price($whole_quote_sub_total); ?></td>
+                                    <td><?php echo wc_price($gett ); ?></td>
                                 </tr>
                             </tfoot>
                         </table>

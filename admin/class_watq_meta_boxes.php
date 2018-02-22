@@ -110,8 +110,11 @@ Class WATQ_MetaBoxes {
                         <tbody>
                         <?php
                         $post_meta = get_post_meta( get_the_ID(), 'quote_post_data' );
-                        $product_details = $post_meta[0]['quote_data'];
-                        foreach($product_details as $product_detail) {
+                        $product_details = $post_meta;
+                        $gett = null;
+
+                        foreach($product_details[0]['quote_data'] as $product_detail) {
+
                             ?>
                             <tr>
                                 <td class="product_image">
@@ -122,10 +125,18 @@ Class WATQ_MetaBoxes {
                                 <td class="product_title">
                                     <a href="<?php the_permalink($product_detail['product_id']); ?>">
                                         <?php echo $product_detail['product_title']; ?>
-                                    </a>
+                                    </a> <br>
                                     <?php
-                                        if($product_detail['product_type'] == "variation"){
-                                            echo $product_detail['product_variation'];
+                                    $product = wc_get_product ( $product_detail['product_id'] );
+
+                                  if ( $product->is_type( 'variable' ) ){
+                                            $variation = wc_get_product($product_detail['variation_id']);
+                                           $varation_name = $variation->get_variation_attributes();
+
+                                           foreach ($varation_name as $key => $value) {
+                                               echo '<b>' . str_replace('attribute_pa_', '', $key) . ':</b> ' . $value . '<br>';
+
+                                       }
                                         }
                                     ?>
                                 </td>
@@ -136,7 +147,8 @@ Class WATQ_MetaBoxes {
                                     <?php echo $product_detail['product_quantity']; ?>
                                 </td>
                                 <td class="total_price">
-                                    <?php echo $product_detail['sub_total']; ?>
+                                    <?php echo $product_detail['sub_total'];
+                                    ?>
                                 </td>
                             </tr>
                             <?php $whole_quote_sub_total = $product_detail['quote_total']; ?>
@@ -145,27 +157,35 @@ Class WATQ_MetaBoxes {
                             <input type="hidden" name="variation_id" class="variation_id" value="<?php echo $product_detail['variation_id']; ?>">
 
                             <?php
-                        }
-                        ?>
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td></td>
-                                <td></td>
-                                <td colspan="2"><?php echo __('Sub Total', WATQ); ?></td>
-                                <td><?php echo wc_price($whole_quote_sub_total); ?> </td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <?php
-    }
+                            $product_id = $product_detail['product_id'];
+                            $product = wc_get_product($product_id);
+                            $quantity = (int)$product_detail['product_quantity'];
 
-    /**
-     *  Get MetaBox Value
-     */
+                            $sale_price = $product->get_price();
+                            $gett += $sale_price*$quantity;
+
+
+                       }
+                       ?>
+                       </tbody>
+                       <tfoot>
+                           <tr>
+                               <td></td>
+                               <td></td>
+                               <td colspan="2"><?php echo __('Sub Total', WATQ); ?></td>
+                               <td><?php echo get_woocommerce_currency_symbol(). $gett; //wc_price($whole_quote_sub_total); ?> </td>
+                           </tr>
+                       </tfoot>
+                   </table>
+               </div>
+           </div>
+       </div>
+       <?php
+   }
+
+   /**
+    *  Get MetaBox Value
+    */
     public function watq_get_metabox_value($value) {
 
         global $post;

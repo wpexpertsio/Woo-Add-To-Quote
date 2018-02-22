@@ -3,10 +3,12 @@
 Plugin Name: Woo Add To Quote
 Plugin URI: https://wpexperts.io
 Description: This Plugin adds woocommerce add to quote functionality and much more...
-Version: 1.1
+Version: 1.2
 Author: wpexpertsio
 Author URI: https://wpexperts.io
 */
+
+define('WATQ_PLUGIN_URL',plugin_dir_url( __FILE__ ) );
 
 if ( ! defined( 'ABSPATH' ) ) {
     exit; // Exit if accessed directly
@@ -24,7 +26,6 @@ function watq_check_if_woo_is_active(){
         $message = __("Quote plugin requires Woocommerce plugin to be activated.", 'watq');
         echo"<div class=\"$class\"> <p>$message</p></div>";
     }
-
 }
 add_action('admin_init','watq_check_if_woo_is_active');
 
