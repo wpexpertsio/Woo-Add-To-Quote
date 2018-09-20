@@ -19,18 +19,21 @@ jQuery(document).ready(
             }, 3000);
         });
 
+		function _display_hide() {
+			var attr = $('.single_variation_wrap').find('.single_add_to_cart_button').attr('disabled');
+			if($('.woocommerce-variation').css('display') != 'none' && (typeof attr === typeof undefined || attr === false)) {
+				$('#_add_to_quote_form_wrapper').find('._add_to_quote_submit').removeClass('_hide');
+			}
+			else if($('.woocommerce-variation').css('display') == 'none' || (typeof attr !== typeof undefined || attr !== false)) {
+				$('#_add_to_quote_form_wrapper').find('._add_to_quote_submit').addClass('_hide');
+			}
+		}
+
         $(document).on('change','.variations select,.variations-table select,.variation_form_section #color,.variation_form_section #pa_colors', function() {
             setTimeout(function() { _display_hide() } ,500);
-            function _display_hide() {
-				var attr = $('.single_variation_wrap').find('.single_add_to_cart_button').attr('disabled');
-				if($('.single_variation_wrap').css('display') == 'block' && (typeof attr === typeof undefined || attr === false)) {
-                    $('#_add_to_quote_form_wrapper').find('._add_to_quote_submit').removeClass('_hide');
-                }
-                else if($('.single_variation_wrap').css('display') == 'none' || (typeof attr !== typeof undefined || attr !== false)) {
-                    $('#_add_to_quote_form_wrapper').find('._add_to_quote_submit').addClass('_hide');
-                }
-            }
         });
+
+		_display_hide();
 		_remove_th_on_responsive();
 		change_size();
 		$(window).resize(
