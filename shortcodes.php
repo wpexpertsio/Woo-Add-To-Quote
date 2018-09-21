@@ -115,7 +115,6 @@ function watq_get_quote($atts) {
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $quantity; ?>]" class="" value="<?php echo $data['product_quantity']; ?>" />
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $type; ?>]" class="" value="<?php echo $data['product_type']; ?>" />
                                         <input type="hidden" name="data[<?php echo $data['product_variation_id']; ?>][<?php echo $variation_id; ?>]" class="variation_id" value="<?php echo $data['product_variation_id']; ?>" />
-                                        <input type="hidden" name="quote_total" class="quote_total" value="<?php echo $whole_quote_sub_total; ?>" />
                                     </tr>
                                     <?php
                                 }
@@ -128,6 +127,7 @@ function watq_get_quote($atts) {
                                     <td></td>
                                     <td colspan="2"><?php echo __('Sub Total', WATQ); ?></td>
                                     <td><?php echo wc_price($gett ); ?></td>
+                                    <input type="hidden" name="quote_total" class="quote_total" value="<?php echo $gett; ?>" />
                                 </tr>
                             </tfoot>
                         </table>
