@@ -68,6 +68,11 @@ function watq_add_quote_button() {
         }
     }
     $product_image_url = wp_get_attachment_image_src(get_post_thumbnail_id(get_the_ID()),'full');
+
+    $button_text = __('ADD TO QUOTE', WATQ);
+    if(get_option('wc_settings_quote_button_text') != null)
+        $button_text = get_option('wc_settings_quote_button_text');
+
     $return = '<form class="_add_to_quote" id="_add_to_quote_form_wrapper" method="POST" action="'.get_the_permalink().'">';
     $return .= '<input type="hidden" name="product_id" value="'.get_the_ID().'"  />';
     $return .= '<input type="hidden" name="product_title" value="'.get_the_title().'"  />';
@@ -79,7 +84,7 @@ function watq_add_quote_button() {
     }
     $return .= '<input type="hidden" name="variation_id" class="variation_id" value="" />';
     $return .= '<input type="hidden" name="action" value="quote_submission_" />';
-    $return .= '<button type="submit" class="_add_to_quote_submit button '.$class.'" id="_add_to_quote_">'.__('ADD TO QUOTE', WATQ).'</button>';
+    $return .= '<button type="submit" class="_add_to_quote_submit button '.$class.'" id="_add_to_quote_">'.$button_text.'</button>';
     $return .= '</form>';
     echo $return;
 }
